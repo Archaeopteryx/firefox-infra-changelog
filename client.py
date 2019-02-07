@@ -11,6 +11,7 @@ from github import Github, GithubException
 from dateutil.parser import parse
 import click
 import requests
+import logging
 from fic_modules import configuration
 from fic_modules.helper_functions import compare_files, clear_file, get_commit_details, \
     extract_reviewer, remove_chars, filter_strings
@@ -25,31 +26,27 @@ CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 def limit_checker():
     """
     This function checks if your limit requests is not exceeded.
-    Every time when this function is called, it returns 1 in case of your requests limit is not
-    exceeded, otherwise it will wait for the reset time to pass.
+    Every time when this function is called, it returns 1 in case of your requests limit is not exceeded,
+    otherwise it will wait for the reset time to pass.
     :return: returns 1 if your limit requests is not exceeded
     """
-    rate_limit = GIT.rate_limiting[0]
-    unix_reset_time = GIT.rate_limiting_resettime
+    rate_limit = git.rate_limiting[0]
+    unix_reset_time = git.rate_limiting_resettime
     reset_time = datetime.fromtimestamp(unix_reset_time)
     if rate_limit >= 5:
-        sys.stdout.write("\rRate limit is: " + str(rate_limit))
-        sys.stdout.flush()
+        logging.info("Rate limit is: " + str(rate_limit))
         return 1
     else:
         try:
-            print("You have reached the requests limit!")
-            print("The requests limit will reset at:" + str(reset_time))
+            logging.critical("You have reached the requests limit!")
+            logging.info("The requests limit will reset at:" + str(reset_time))
             while rate_limit < 5000 and reset_time >= datetime.now():
-                unix_reset_time = GIT.rate_limiting_resettime
+                unix_reset_time = git.rate_limiting_resettime
                 reset_time = datetime.fromtimestamp(unix_reset_time)
-            print("\nThe requests limit has been reset!")
+            logging.info("\nThe requests limit has been reset!")
             return 1
-
-        except GithubException.status == 403:
-            print("The requests limit is reset to: " + str(reset_time))
-        except GithubException.status == 404:
-            print("Github is down!\n Please try again later...")
+        except:
+            logging.info("The requests limit is reset to:" + str(reset_time))
 
 
 def create_files_for_git(repositories_holder, onerepo):
